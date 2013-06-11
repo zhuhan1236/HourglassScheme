@@ -6,4 +6,5 @@ public class HourglassHandle extends ConnHandle{
 	public HourglassHandle(Socket conn){
 		super(conn);
 	}
+	public
 }
