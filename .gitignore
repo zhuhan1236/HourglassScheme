@@ -2,8 +2,16 @@
 *.class
 *.settings
 *.project
+<<<<<<< HEAD
+
+*.prefs
+=======
 *.DS_Store
 *.DS_Store?
 /*.settings/
 *.settings/
+<<<<<<< HEAD
+>>>>>>> 693024cf08e00d75ac27ab95ccdfbc1d4c0b9c7b
+=======
 *.settings/*
+>>>>>>> 9c549e2021c04f89e5ada3c4c5cacd025b9a1702
