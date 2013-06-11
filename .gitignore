@@ -2,3 +2,6 @@
 *.class
 *.settings
 *.project
+*.DS_Store
+*.DS_Store?
+/*.settings/
