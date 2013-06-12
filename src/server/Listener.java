@@ -1,9 +1,5 @@
 package server;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-
 public abstract class Listener {
 	protected int port;
 	protected int type;

@@ -4,6 +4,7 @@ import java.net.Socket;
 
 public class HourglassHandle extends ConnHandle{
 	private HHandlePI handlePI = null;
+	private DataChannel dataChannel = null;
 	
 	public HourglassHandle(Socket conn){
 		super(conn);
@@ -20,9 +21,20 @@ public class HourglassHandle extends ConnHandle{
 	
 	private class HHandlePI implements Runnable{
 
-		@Override
 		public void run() {
-			// TODO Auto-generated method stub
+			DataChannelListener dataChannelListener = new DataChannelListener(4081, 0);
+			Thread listenThread = dataChannelListener.run();
+			
+			synchronized (listenThread) {
+				try {
+					listenThread.wait();
+					dataChannel = dataChannelListener.getDataChannel();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			
 		}
 	}
 }

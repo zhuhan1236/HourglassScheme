@@ -1,5 +1,7 @@
 package server;
 
+import java.io.IOException;
+
 public class CloudServer{
 	private int port;
 	private int type;
@@ -17,7 +19,7 @@ public class CloudServer{
 		type = t;
 	}
 	
-	public static void main(String[] args){
+	public static void main(String[] args) throws IOException{
 		if(args.length == 0){
 			CloudServer cloudServer = new CloudServer();
 			cloudServer.startListen();	
@@ -35,6 +37,8 @@ public class CloudServer{
 		}
 	}
 	
-	public void startListen(){
+	public void startListen() throws IOException{
+		HandleConnListener hConnListener = new HandleConnListener(port, type);
+		hConnListener.listen();
 	}
 }
