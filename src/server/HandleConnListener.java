@@ -23,7 +23,7 @@ public class HandleConnListener extends Listener{
 					HourglassHandle hHandle = new HourglassHandle(conn);
 					hHandle.run();
 				}else{
-					NormalHandle nHandle = new NormalHandle(conn);
+					CheatingHandle nHandle = new CheatingHandle(conn);
 					nHandle.run();
 				}
 			}

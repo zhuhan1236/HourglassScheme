@@ -5,6 +5,7 @@ import java.io.IOException;
 public class CloudServer{
 	private int port;
 	private int type;
+	public static String serverRoot = "/home/zh-pc/secFile/";
 	
 	public CloudServer(){
 		this(4080, 1);

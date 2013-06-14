@@ -4,41 +4,69 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class DataChannelListener extends Listener{
+public class DataChannelListener extends Listener {
 	private DCListenerPI dCLPI = null;
 	private DataChannel dataChannel = null;
-	
-	public DataChannelListener(int p, int t){
+	private static ServerSocket server;
+	private DataChannelListener that = this;
+
+	public DataChannelListener(int p, int t) {
 		super(p, t);
 		dCLPI = new DCListenerPI();
 	}
-	public DataChannelListener(int t){
+
+	public DataChannelListener(int t) {
 		super(t);
 		dCLPI = new DCListenerPI();
 	}
-	
-	public DataChannel getDataChannel(){
+
+	public DataChannel getDataChannel() {
 		return dataChannel;
 	}
-	
-	public Thread run(){
+
+	public void waitForDataConnection() {
+		synchronized (this) {
+			try {
+				this.wait(10000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void run() {
 		Thread thread = new Thread(dCLPI);
 		thread.start();
-		return thread;
+
+		synchronized (this) {
+			try {
+				this.wait(10000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
-	
-	private class DCListenerPI implements Runnable{
+
+	private class DCListenerPI implements Runnable {
 
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
-			ServerSocket server;
 			try {
-				synchronized (this) {
-					server = new ServerSocket(port);
-					Socket conn = server.accept();
-					dataChannel = new DataChannel(conn);
-					this.notify();
+				synchronized (that) {
+					try {
+						server = new ServerSocket(port);
+						that.notify();
+
+					} catch (IOException e) {
+						that.notify();
+					}
+
+				}
+				Socket conn = server.accept();
+				dataChannel = new DataChannel(conn);
+				synchronized (that) {
+					that.notify();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -3,12 +3,30 @@ package client;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class CloudClient{
+	public static String ipAddress;
+	public static String workspace = "/home/zh-pc/secLocal/";
+	
 	public static void main(String[] args) throws UnknownHostException, IOException{
-		Socket handleSocket = new Socket("59.66.138.97", 4080);
-		Socket dataSocket = new Socket("59.66.138.97", 4081);
-		handleSocket.close();
-		dataSocket.close();
+		System.out.println("input server IP >");
+		Scanner s = new Scanner(System.in);
+		
+		
+		Socket handleSocket;
+		while(true){
+			try{
+				ipAddress = s.nextLine();
+				handleSocket = new Socket(ipAddress, 4080);
+				break;
+			}
+			catch (IOException e){
+				System.out.println("connect failed, try again");
+				continue;
+			}
+		}
+		ConnHandle connHandle = new ConnHandle(handleSocket);
+		connHandle.run();
 	}
 }
