@@ -91,7 +91,9 @@ public class DataChannel{
 				}
 				else if(command == 1){
 					File file = new File(path);
-					file.deleteOnExit();
+					if(file.exists() && file.isFile()){
+						file.delete();
+					}
 					file.createNewFile();
 					byte[] buf = new byte[1024];
 					FileOutputStream fileOut = new FileOutputStream(file);
