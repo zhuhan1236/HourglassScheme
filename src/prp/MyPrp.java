@@ -193,6 +193,16 @@ public class MyPrp {
 		return returnBytes;
 	}
 	
+	public static ArrayList<byte[]> newGetHFromG(ArrayList<byte[]> gDoc){
+		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
+		ArrayList<byte[]> littleBlockBytes = new ArrayList<byte[]>();
+		int i;
+		byte[] buffer;
+		for (i = 0;i < gDoc.size()-1;i++){
+			
+		}
+		return returnBytes;
+	}
 	public static ArrayList<byte[]> getGFormH(ArrayList<byte[]> hDoc){
 		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
 		int i,j,k;
