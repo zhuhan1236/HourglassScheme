@@ -1,19 +1,13 @@
 package prp;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -22,9 +16,7 @@ import java.util.Random;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 public class myPrp {
@@ -213,6 +205,12 @@ public class myPrp {
 			returnBytes.add(temp.getBytes());
 		}
 		return returnBytes;
+	}
+	
+	public static boolean integrityChecking(byte[] a,byte[] b){
+		String aMD5 = MyMD5.getMD5(a);
+		String bMD5 = MyMD5.getMD5(b);
+		return aMD5.equals(bMD5);
 	}
 	
 	public static byte[] parseHexStr2Byte(String hexStr) {  
