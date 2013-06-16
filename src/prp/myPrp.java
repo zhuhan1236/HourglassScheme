@@ -19,100 +19,87 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-public class myPrp {
-
-	/**
-	 * @param args
-	 */
-	
-		
-	
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-	}
-	
-	
-	//shuffle
-	public static ArrayList<Integer> myShuffle(long docSize){
-		ArrayList<Integer> myList= new ArrayList<Integer>();
+public class MyPrp {
+	// shuffle
+	public static ArrayList<Integer> myShuffle(long docSize) {
+		ArrayList<Integer> myList = new ArrayList<Integer>();
 		int i;
 		long docBlockNum = docSize / 16;
 		if (docSize % 1 != 0)
 			docBlockNum += 1;
-		for(i = 0;i < docBlockNum;i++)
+		for (i = 0; i < docBlockNum-1; i++)
 			myList.add(i);
 		Collections.shuffle(myList);
+		myList.add((int)docBlockNum-1);
 		return myList;
 	}
-	
-	
-	public static String getRandomPassword(int length){
+
+	public static String getRandomPassword(int length) {
 		final int maxLength = 50;
 		final int maxNum = 36;
-		Date md= new Date();
+		Date md = new Date();
 		char[] str = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
-			    'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-			    'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-		if (length > maxLength){
+				'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+				'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+		if (length > maxLength) {
 			return null;
 		}
 		int count;
-		Random r  = new Random(md.getTime());
+		Random r = new Random(md.getTime());
 		StringBuffer password = new StringBuffer();
-		for (count = 0;count < length;count++)
+		for (count = 0; count < length; count++)
 			password.append(str[Math.abs(r.nextInt(maxNum))]);
 		return password.toString();
 	}
-	
-	
-	public static  void enCodeAndWriteToDoc(ArrayList<byte[]> content,ArrayList<Integer> myList) throws IOException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+
+	public static ArrayList<byte[]> enCodeAndWriteToDoc(ArrayList<byte[]> content,
+			ArrayList<Integer> myList, String path) throws IOException, InvalidKeyException,
+			NoSuchAlgorithmException, NoSuchPaddingException,
+			IllegalBlockSizeException, BadPaddingException {
 		int i;
 		final int pwdLength = 10;
 		String password;
-		File pwdFile = new File("pwd.txt");
-		File indexFile = new File("index.txt");
-		File outFile = new File("result.txt");
+		File pwdFile = new File(server.CloudServer.serverRoot + "pwd/" + path);
+		File indexFile = new File(server.CloudServer.serverRoot + "index/" + path);
+		ArrayList<byte[]> result = new ArrayList<byte[]>();
 		SecretKeySpec key;
-		if (!pwdFile.exists()){
+		if (!pwdFile.exists()) {
 			pwdFile.createNewFile();
 		}
-		if (!indexFile.exists()){
+		if (!indexFile.exists()) {
 			indexFile.createNewFile();
-		}
-		if (!outFile.exists()){
-			outFile.createNewFile();
 		}
 		FileWriter fo = new FileWriter(pwdFile);
 		FileWriter nfo = new FileWriter(indexFile);
-		FileWriter ofo = new FileWriter(outFile);
 		int index;
-		//in this function, I need generate keys for every block
-		for(i = 0;i < myList.size();i++){
+		// in this function, I need generate keys for every block
+		for (i = 0; i < myList.size(); i++) {
 			index = myList.indexOf(i);
 			password = getRandomPassword(pwdLength);
-			//byte[] enCodeFormat = secretKey.getEncoded();
+			// byte[] enCodeFormat = secretKey.getEncoded();
 			key = new SecretKeySpec(password.getBytes(), "AES");
-			//key has generated,the key is about the shuffled set,and I need to write the key to the file
+			// key has generated,the key is about the shuffled set,and I need to
+			// write the key to the file
 			fo.write(password + "\r\n");
 			nfo.write(myList.get(i).toString() + "\r\n");
-			//md5Key = MyMD5.getMD5(key.toString().getBytes()).getBytes();
-			//md5Index = MyMD5.getMD5(myList.get(i).toString().getBytes()).getBytes();
-			//result = new byte[md5Key.length];
-			//for(int j = 0;j < md5Key.length;j ++){
-			//	result[j] = (byte)(md5Key[j] ^ md5Index[j]);
-			//}
-			ofo.write(encrypt(content.get(myList.get(index)).toString(),key).toString() + "\r\n");
+			// md5Key = MyMD5.getMD5(key.toString().getBytes()).getBytes();
+			// md5Index =
+			// MyMD5.getMD5(myList.get(i).toString().getBytes()).getBytes();
+			// result = new byte[md5Key.length];
+			// for(int j = 0;j < md5Key.length;j ++){
+			// result[j] = (byte)(md5Key[j] ^ md5Index[j]);
+			// }
+			result.add(encrypt(content.get(myList.get(index)).toString(), key));
 		}
 		fo.close();
 		nfo.close();
-		ofo.close();
+		return result;
 	}
-	
-	
-	public static ArrayList<byte[]> decodeFile() throws IOException{
-		File pwdFile = new File("pwd.txt");
-		File indexFile = new File("index.txt");
-		File dFile = new File("result.txt");
+
+	public static ArrayList<byte[]> decodeFile(String path) throws IOException {
+		File pwdFile = new File(server.CloudServer.serverRoot + "pwd/" + path);
+		File indexFile = new File(server.CloudServer.serverRoot + "index/" + path);
+		File dFile = new File(server.CloudServer.serverRoot + "content/" + path);
 		FileReader pwdIS = new FileReader(pwdFile);
 		BufferedReader pwdBR = new BufferedReader(pwdIS);
 		FileReader indexIS = new FileReader(indexFile);
@@ -126,103 +113,125 @@ public class myPrp {
 		SecretKeySpec key;
 		String line = null;
 		int i = 0;
-		while ((line = pwdBR.readLine()) != null){
+		while ((line = pwdBR.readLine()) != null) {
 			keyString.add(line);
 			i++;
 		}
 		pwdBR.close();
-		
-		while ((line = dBR.readLine()) != null){
+
+		while ((line = dBR.readLine()) != null) {
 			rString.add(line);
 		}
 		dBR.close();
-		
+
 		int index = -1;
-		for (int k = 0;k < i;k++){
+		for (int k = 0; k < i; k++) {
 			indexString = indexBR.readLine();
 			index = Integer.parseInt(indexString);
 			key = new SecretKeySpec(keyString.get(k).getBytes(), "AES");
-			returnByte.add(decrypt(rString.get(index).getBytes(),key));
+			returnByte.add(decrypt(rString.get(index).getBytes(), key));
 		}
 		indexBR.close();
-		
+
 		return returnByte;
 	}
-	
-	public static byte[] encrypt(String content,SecretKeySpec password) throws NoSuchAlgorithmException, NoSuchPaddingException, UnsupportedEncodingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
+
+	public static byte[] encrypt(String content, SecretKeySpec password)
+			throws NoSuchAlgorithmException, NoSuchPaddingException,
+			UnsupportedEncodingException, InvalidKeyException,
+			IllegalBlockSizeException, BadPaddingException {
 		byte[] result;
-		try{
+		try {
 			Cipher cipher = Cipher.getInstance("AES");
 			byte[] byteContent = content.getBytes();
 			cipher.init(Cipher.ENCRYPT_MODE, password);
 			result = cipher.doFinal(byteContent);
 			return result;
-		}
-		catch (Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
-	
-	public static byte[] decrypt(byte[] content, SecretKeySpec password){
-		try {  
-            Cipher cipher = Cipher.getInstance("AES");  
-            cipher.init(Cipher.DECRYPT_MODE, password); 
-            byte[] result = cipher.doFinal(content);  
-            return result;
-        } catch (Exception e) {  
-            e.printStackTrace();  
-        }  
-        return null; 
+
+	public static byte[] decrypt(byte[] content, SecretKeySpec password) {
+		try {
+			Cipher cipher = Cipher.getInstance("AES");
+			cipher.init(Cipher.DECRYPT_MODE, password);
+			byte[] result = cipher.doFinal(content);
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public static String parseByte2HexStr(byte buf[]) {
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < buf.length; i++) {
+			String hex = Integer.toHexString(buf[i] & 0xFF);
+			if (hex.length() == 1) {
+				hex = '0' + hex;
+			}
+			sb.append(hex.toUpperCase());
+		}
+		return sb.toString();
 	}
 	
-	public static String parseByte2HexStr(byte buf[]) {  
-        StringBuffer sb = new StringBuffer();  
-        for (int i = 0; i < buf.length; i++) {  
-                String hex = Integer.toHexString(buf[i] & 0xFF);  
-                if (hex.length() == 1) {  
-                        hex = '0' + hex;  
-                }  
-                sb.append(hex.toUpperCase());  
-        }  
-        return sb.toString();  
-	}
-	
-	//I need every block's length be equal
-	public static ArrayList<byte[]> getHdoc(ArrayList<byte[]> gDoc){
+	public static ArrayList<byte[]> getHdoc(ArrayList<byte[]> gDoc) {
 		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
 		byte[] buffer;
 		String temp = "";
-		int i,j,k;
-		for (i = 0;i < gDoc.get(0).length / 8;i++){
-			for(j = 0; j < gDoc.size();j++){
+		int i, j, k;
+		for (i = 0; i < gDoc.get(0).length / 8; i++) {
+			for (j = 0; j < gDoc.size() - 1; j++) {
 				buffer = new byte[8];
-				for (k = 0;k < 8;k ++){
-					buffer[k] = gDoc.get(j)[i*8 + k];
+				for (k = 0; k < 8; k++) {
+					buffer[k] = gDoc.get(j)[i * 8 + k];
 				}
 				temp += buffer.toString();
 			}
 			returnBytes.add(temp.getBytes());
 		}
+		returnBytes.add(gDoc.get(gDoc.size()-1));
 		return returnBytes;
 	}
 	
-	public static boolean integrityChecking(byte[] a,byte[] b){
+	public static ArrayList<byte[]> getGFormH(ArrayList<byte[]> hDoc){
+		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
+		int i,j,k;
+		byte[] buffer;
+		String temp = "";
+		for (i = 0;i < hDoc.size()-1;i++){
+			for (j = 0; j < hDoc.get(0).length / 8;j++){
+				buffer = new byte[8];
+				for (k = 0;k < 8;k ++){
+					buffer[k] = hDoc.get(i)[j*8+k];
+				}
+				temp += buffer.toString();
+			}
+			returnBytes.add(temp.getBytes());
+		}
+		returnBytes.add(hDoc.get(hDoc.size()-1));
+		return returnBytes;
+	}
+	
+	public static boolean integrityChecking(byte[] a, byte[] b) {
 		String aMD5 = MyMD5.getMD5(a);
 		String bMD5 = MyMD5.getMD5(b);
 		return aMD5.equals(bMD5);
 	}
-	
-	public static byte[] parseHexStr2Byte(String hexStr) {  
-		if (hexStr.length() < 1)  
-            return null;  
-		byte[] result = new byte[hexStr.length()/2];  
-		for (int i = 0;i< hexStr.length()/2; i++) {  
-            int high = Integer.parseInt(hexStr.substring(i*2, i*2+1), 16);  
-            int low = Integer.parseInt(hexStr.substring(i*2+1, i*2+2), 16);  
-            result[i] = (byte) (high * 16 + low);  
-		}  
-		return result;  
+
+	public static byte[] parseHexStr2Byte(String hexStr) {
+		if (hexStr.length() < 1)
+			return null;
+		byte[] result = new byte[hexStr.length() / 2];
+		for (int i = 0; i < hexStr.length() / 2; i++) {
+			int high = Integer.parseInt(hexStr.substring(i * 2, i * 2 + 1), 16);
+			int low = Integer.parseInt(hexStr.substring(i * 2 + 1, i * 2 + 2),
+					16);
+			result[i] = (byte) (high * 16 + low);
+		}
+		return result;
 	}
-	
+
 }
