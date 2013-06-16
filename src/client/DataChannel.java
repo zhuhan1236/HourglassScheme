@@ -104,7 +104,35 @@ public class DataChannel{
 						if(input != null)
 						{
 							pos = input.read(buf);
-							totalSize += pos;
+							totalSize += 1;
+						}
+						fileOut.write(buf, 0, pos);
+						fileOut.flush();
+						if((pos == -1) || (totalSize == size))
+						{
+							break;
+						}
+					}
+					fileOut.close();
+					connState = 0;
+					System.out.println("transfer completed");
+				}
+				else if(command == 2){
+					File file = new File(path);
+					if(file.exists() && file.isFile()){
+						file.delete();
+					}
+					file.createNewFile();
+					byte[] buf = new byte[1024];
+					FileOutputStream fileOut = new FileOutputStream(file);
+					long totalSize = 0;
+					while(true)
+					{
+						int pos = 0;
+						if(input != null)
+						{
+							pos = input.read(buf);
+							totalSize += 1;
 						}
 						fileOut.write(buf, 0, pos);
 						fileOut.flush();

@@ -2,6 +2,7 @@ package prp;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,17 +20,20 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import server.CloudServer;
+
 public class MyPrp {
 	// shuffle
 	public static ArrayList<Integer> myShuffle(long docSize) {
 		ArrayList<Integer> myList = new ArrayList<Integer>();
 		int i;
-		long docBlockNum = docSize / 16;
-		if (docSize % 1 != 0)
+		long docBlockNum = docSize / 1024;
+		if (docSize % 1024 != 0)
 			docBlockNum += 1;
-		for (i = 0; i < docBlockNum; i++)
+		for (i = 0; i < docBlockNum-1; i++)
 			myList.add(i);
 		Collections.shuffle(myList);
+		myList.add((int)docBlockNum-1);
 		return myList;
 	}
 
@@ -56,7 +60,7 @@ public class MyPrp {
 			NoSuchAlgorithmException, NoSuchPaddingException,
 			IllegalBlockSizeException, BadPaddingException {
 		int i;
-		final int pwdLength = 10;
+		final int pwdLength = 16;
 		String password;
 		File pwdFile = new File(server.CloudServer.serverRoot + "pwd/" + path);
 		File indexFile = new File(server.CloudServer.serverRoot + "index/" + path);
@@ -88,23 +92,20 @@ public class MyPrp {
 			// for(int j = 0;j < md5Key.length;j ++){
 			// result[j] = (byte)(md5Key[j] ^ md5Index[j]);
 			// }
-			result.add(encrypt(content.get(myList.get(index)).toString(), key));
+			result.add(encrypt(new String(content.get(myList.get(index))), key));
 		}
 		fo.close();
 		nfo.close();
 		return result;
 	}
 
-	public static ArrayList<byte[]> decodeFile(String path) throws IOException {
+	public static ArrayList<byte[]> decodeFile(ArrayList<byte[]> gFile, String path) throws IOException {
 		File pwdFile = new File(server.CloudServer.serverRoot + "pwd/" + path);
 		File indexFile = new File(server.CloudServer.serverRoot + "index/" + path);
-		File dFile = new File(server.CloudServer.serverRoot + "content/" + path);
 		FileReader pwdIS = new FileReader(pwdFile);
 		BufferedReader pwdBR = new BufferedReader(pwdIS);
 		FileReader indexIS = new FileReader(indexFile);
 		BufferedReader indexBR = new BufferedReader(indexIS);
-		FileReader dIS = new FileReader(dFile);
-		BufferedReader dBR = new BufferedReader(dIS);
 		ArrayList<String> keyString = new ArrayList<String>();
 		ArrayList<String> rString = new ArrayList<String>();
 		ArrayList<byte[]> returnByte = new ArrayList<byte[]>();
@@ -118,17 +119,12 @@ public class MyPrp {
 		}
 		pwdBR.close();
 
-		while ((line = dBR.readLine()) != null) {
-			rString.add(line);
-		}
-		dBR.close();
-
 		int index = -1;
 		for (int k = 0; k < i; k++) {
 			indexString = indexBR.readLine();
 			index = Integer.parseInt(indexString);
 			key = new SecretKeySpec(keyString.get(k).getBytes(), "AES");
-			returnByte.add(decrypt(rString.get(index).getBytes(), key));
+			returnByte.add(decrypt(gFile.get(index), key));
 		}
 		indexBR.close();
 
@@ -175,26 +171,49 @@ public class MyPrp {
 		}
 		return sb.toString();
 	}
-
-	// I need every block's length be equal
+	
 	public static ArrayList<byte[]> getHdoc(ArrayList<byte[]> gDoc) {
 		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
 		byte[] buffer;
-		String temp = "";
 		int i, j, k;
-		for (i = 0; i < gDoc.get(0).length / 8; i++) {
-			for (j = 0; j < gDoc.size(); j++) {
-				buffer = new byte[8];
-				for (k = 0; k < 8; k++) {
-					buffer[k] = gDoc.get(j)[i * 8 + k];
-				}
-				temp += buffer.toString();
-			}
-			returnBytes.add(temp.getBytes());
+		if (gDoc.size() == 1){
+			returnBytes.add(gDoc.get(gDoc.size()-1));
+			return returnBytes;
 		}
+		for (i = 0; i < gDoc.get(0).length / 8; i++) {
+			buffer = new byte[gDoc.size()*8-8];
+			for (j = 0; j < gDoc.size() - 1; j++) {
+				for (k = 0; k < 8; k++) {
+					buffer[j*8 + k] = gDoc.get(j)[i * 8 + k];
+				}
+			}
+			returnBytes.add(buffer);
+		}
+		returnBytes.add(gDoc.get(gDoc.size()-1));
 		return returnBytes;
 	}
-
+	
+	public static ArrayList<byte[]> getGFormH(ArrayList<byte[]> hDoc){
+		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
+		int i,j,k;
+		byte[] buffer;
+		if (hDoc.size() == 1){
+			returnBytes.add(hDoc.get(hDoc.size()-1));
+			return returnBytes;
+		}
+		for (i = 0;i < hDoc.get(0).length / 8;i++){
+			buffer = new byte[1040];
+			for (j = 0; j < hDoc.size()-1;j++){
+				for (k = 0;k < 8;k ++){
+					buffer[k + j*8] = hDoc.get(j)[i*8+k];
+				}
+			}
+			returnBytes.add(buffer);
+		}
+		returnBytes.add(hDoc.get(hDoc.size()-1));
+		return returnBytes;
+	}
+	
 	public static boolean integrityChecking(byte[] a, byte[] b) {
 		String aMD5 = MyMD5.getMD5(a);
 		String bMD5 = MyMD5.getMD5(b);
@@ -214,4 +233,17 @@ public class MyPrp {
 		return result;
 	}
 
+	public static int getBlockNum(String path) throws IOException{
+		String pwdPath = CloudServer.serverRoot + "pwd/" + path;
+		
+		File fp = new File(pwdPath);
+		FileReader fr = new FileReader(fp);
+		BufferedReader br = new BufferedReader(fr);
+		int line = 0;
+		while(br.readLine() != null){
+			++line;
+		}
+		
+		return (line);
+	}
 }
