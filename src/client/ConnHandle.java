@@ -97,6 +97,20 @@ public class ConnHandle {
 		}
 	}
 
+	private void handleGETH(String response) {
+		CompiledResult r = new CompiledResult();
+		r.compile(response);
+		if(r.command.startsWith("ERROR")){
+			System.out.println(response);
+		} else{
+			dataChannel.config(1, 2, CloudClient.workspace
+					+ compiledMsg.content, Long.parseLong(response
+					.substring(response.indexOf(" ") + 1)));
+			System.out.println("transfering...");
+			dataChannel.run();
+		}
+	}
+
 	private void waitResponse(CompiledResult msg) {
 		try {
 			if (msg.command.equals("LIST")) {
@@ -119,7 +133,7 @@ public class ConnHandle {
 					System.out.println("ERROR: local file not exist");
 				}
 			} else if (msg.command.equals("RETR")) {
-				if(dataChannel.getConnState() != 0){
+				if (dataChannel.getConnState() != 0) {
 					System.out.println("data channel is busy");
 					return;
 				}
@@ -128,6 +142,16 @@ public class ConnHandle {
 				output.write(outputMsg.getBytes());
 				inputMsg = input.readLine();
 				handleRETR(inputMsg);
+			} else if (msg.command.equals("GETH")) {
+				if (dataChannel.getConnState() != 0) {
+					System.out.println("data channel is busy");
+					return;
+				}
+				outputMsg = compiledMsg.command + " " + compiledMsg.content
+						+ "\r\n";
+				output.write(outputMsg.getBytes());
+				inputMsg = input.readLine();
+				handleGETH(inputMsg);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
