@@ -53,6 +53,20 @@ public class HourglassHandle extends ConnHandle {
 		}
 	}
 	
+	private CompiledResult CHALCommand(CompiledResult com){
+		String c = com.content;
+		String p = c.substring(c.indexOf(" ") + 1);
+		String n = c.substring(0, c.indexOf(" "));
+		String confRes = dataChannel.config(1, 3, p, Integer.parseInt(n));
+		if(confRes.equals("")){
+			dataChannel.run();
+			return (new CompiledResult("READY", ""));
+		}
+		else{
+			return (new CompiledResult("ERROR", confRes));
+		}
+	}
+	
 	private CompiledResult GETHCommand(CompiledResult com) throws IOException{
 		int confRes = dataChannel.config(1, 2, com.content);
 		if(confRes == -2){
@@ -95,6 +109,9 @@ public class HourglassHandle extends ConnHandle {
 		}
 		else if (com.command.equals("GETH")){
 			return GETHCommand(com);
+		}
+		else if (com.command.equals("CHAL")){
+			return CHALCommand(com);
 		}
 		else{
 			return (new CompiledResult("UNKNOWN:", com.command));			

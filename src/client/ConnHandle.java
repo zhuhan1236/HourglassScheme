@@ -100,13 +100,27 @@ public class ConnHandle {
 	private void handleGETH(String response) {
 		CompiledResult r = new CompiledResult();
 		r.compile(response);
-		if(r.command.startsWith("ERROR")){
+		if (r.command.startsWith("ERROR")) {
 			System.out.println(response);
-		} else{
+		} else {
 			dataChannel.config(1, 2, CloudClient.workspace
 					+ compiledMsg.content, Long.parseLong(response
 					.substring(response.indexOf(" ") + 1)));
 			System.out.println("transfering...");
+			dataChannel.run();
+		}
+	}
+
+	private void handleCHAL(String response) {
+		CompiledResult r = new CompiledResult();
+		r.compile(response);
+		if (r.command.startsWith("ERROR")) {
+			System.out.println(response);
+		} else {
+			dataChannel.config(1, 3, compiledMsg.content);
+			System.out.println("geting "
+					+ compiledMsg.content.substring(0,
+							compiledMsg.content.indexOf(" ")) + "th block...");
 			dataChannel.run();
 		}
 	}
@@ -152,6 +166,28 @@ public class ConnHandle {
 				output.write(outputMsg.getBytes());
 				inputMsg = input.readLine();
 				handleGETH(inputMsg);
+			} else if (msg.command.equals("CHAL")) {
+				if (dataChannel.getConnState() != 0) {
+					System.out.println("data channel is busy");
+					return;
+				}
+				String c = compiledMsg.content;
+				String filePath = c.substring(c.indexOf(" ") + 1);
+				File f = new File(filePath);
+				if(!(f.exists() && f.isFile())){
+					System.out.println("file not exists");
+					return;
+				}
+				String fileName = f.getName();
+				int bNO = Integer.parseInt(c.substring(0, c.indexOf(" ")));
+				if(bNO > (f.length() / 1024)){
+					System.out.println("block NO. out of bound");
+					return;
+				}
+				outputMsg = compiledMsg.command + " " + bNO + " " + fileName + "\r\n";
+				output.write(outputMsg.getBytes());
+				inputMsg = input.readLine();
+				handleCHAL(inputMsg);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

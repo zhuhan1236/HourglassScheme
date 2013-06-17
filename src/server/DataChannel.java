@@ -1,6 +1,7 @@
 package server;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -25,7 +26,7 @@ public class DataChannel {
 	private DChannelPI dCPI;
 	private String rootPath = CloudServer.serverRoot;
 	private int connState; // 0:idle 1:transferring 2:closed
-	private int command; // 0:STOR 1:RETR 2:GETH
+	private int command; // 0:STOR 1:RETR 2:GETH 3:CHAL
 	private String path;
 	private String contentPath;
 	private String indexPath;
@@ -33,6 +34,7 @@ public class DataChannel {
 	private DataInputStream input;
 	private DataOutputStream output;
 	private long size;
+	private int blockNO;
 
 	public DataChannel(Socket conn) {
 		if ((conn != null) && (conn.isConnected())) {
@@ -69,14 +71,26 @@ public class DataChannel {
 
 	public String config(int s, int com, String p, long si) {
 		if (connState == 0) {
-			connState = s;
-			size = si;
-			command = com;
-			path = p;
-			contentPath = rootPath + "content/" + p;
-			indexPath = rootPath + "index/" + p;
-			pwdPath = rootPath + "pwd/" + p;
-			return "";
+			if(com != 3){
+				connState = s;
+				size = si;
+				command = com;
+				path = p;
+				contentPath = rootPath + "content/" + p;
+				indexPath = rootPath + "index/" + p;
+				pwdPath = rootPath + "pwd/" + p;
+				return "";
+			}
+			else{
+				connState = s;
+				blockNO = (int) si;
+				command = com;
+				path = p;
+				contentPath = rootPath + "content/" + p;
+				indexPath = rootPath + "index/" + p;
+				pwdPath = rootPath + "pwd/" + p;
+				return "";
+			}
 		}
 		return "ERROR";
 	}
@@ -105,7 +119,8 @@ public class DataChannel {
 						for(int i = 0;i < pos;++i){
 							buf1[i] = buf[i];
 						}
-						recvFile.add(buf1);
+						if(buf1.length != 0)
+							recvFile.add(buf1);
 						if ((pos == -1) || (totalSize == size))
 							break;
 					}
@@ -114,8 +129,8 @@ public class DataChannel {
 								.enCodeAndWriteToDoc(recvFile,
 										prp.MyPrp.myShuffle(size), path);
 						
-						ArrayList<byte[]> hFile = prp.MyPrp.getHdoc(gFile);
-						
+						ArrayList<byte[]> hFile = prp.MyPrp.newGetHFromG(gFile);
+								
 						File newFile = new File(contentPath);
 						if(newFile.exists() && newFile.isFile()){
 							newFile.delete();
@@ -148,26 +163,28 @@ public class DataChannel {
 					FileInputStream br = new FileInputStream(newFile);
 					ArrayList<byte[]> thFile = new ArrayList<byte[]>();
 					int blockNum = MyPrp.getBlockNum(path);
-					int blockLen = 8 * (blockNum-1);
+					int blockLen = 1024;
 					byte[] hf = new byte[blockLen];
 					int pos;
-					int tCount;
-					if(blockLen == 0){
-						tCount = 0;
-					}
-					else {
-						tCount = (1040 * (blockNum - 1)) / blockLen;
-					}
+					int tCount = (1040 * (blockNum - 1)) / blockLen;
+					int rLen = (1040 * (blockNum - 1)) % blockLen;
+					
 					int count = 0;
 					while(true){
 						if(count == tCount){
+							byte[] bb = new byte[rLen];
+							pos = br.read(bb);
+							if(bb.length != 0)
+								thFile.add(bb);
+						
 							byte[] b = new byte[1040];
 							pos = br.read(b);
 							byte[] tt = new byte[pos];
 							for(int i = 0;i < pos;++i){
 								tt[i] = b[i];
 							}
-							thFile.add(tt);
+							if(tt.length != 0)
+								thFile.add(tt);
 							break;
 						}
 						pos = 0;
@@ -179,20 +196,21 @@ public class DataChannel {
 						for(int i = 0;i < pos;++i){
 							t[i] = hf[i];
 						}
-						thFile.add(t);
+						if(t.length != 0)
+							thFile.add(t);
 						++count;
 					}
 					br.close();
 					
 					if(command == 1){
-						ArrayList<byte[]> tgFile = prp.MyPrp.getGFormH(thFile);
+						ArrayList<byte[]> tgFile = prp.MyPrp.newGetGFromH(thFile);
 						ArrayList<byte[]> tfFile = prp.MyPrp.decodeFile(tgFile, path);
 						for(int i = 0;i < tfFile.size();++i){
 							output.write(tfFile.get(i), 0, tfFile.get(i).length);
 							output.flush();
 						}
 					}else{
-						ArrayList<byte[]> tgFile = prp.MyPrp.getGFormH(thFile);
+						ArrayList<byte[]> tgFile = prp.MyPrp.newGetGFromH(thFile);
 						
 						for(int i = 0;i < tgFile.size();++i){
 							output.write(tgFile.get(i), 0, tgFile.get(i).length);
@@ -201,6 +219,32 @@ public class DataChannel {
 					}
 					
 					connState = 0;
+				} else if(command == 3){
+					File f = new File(contentPath);
+					int blockLen = 1024;
+					int pos;
+					int tCount = (int) (f.length() / blockLen);
+					int rLen = (int) (f.length() % blockLen);
+					if(blockNO == (tCount)){
+						FileInputStream fI = new FileInputStream(f);
+						fI.skip(1024 * tCount);
+						byte[] buf = new byte[rLen];
+						pos = fI.read(buf);
+						output.write(buf, 0, pos);
+						output.flush();
+						fI.close();
+						connState = 0;
+					}
+					else{
+						FileInputStream fI = new FileInputStream(f);
+						fI.skip(1024 * blockNO);
+						byte[] buf = new byte[1024];
+						pos = fI.read(buf);
+						output.write(buf, 0, pos);
+						output.flush();
+						fI.close();
+						connState = 0;
+					}
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

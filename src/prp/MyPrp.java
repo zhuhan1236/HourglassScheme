@@ -220,12 +220,12 @@ public class MyPrp {
 			}
 		}
 		if (length != hBlockSize){
-			buffer = new byte[length];
+			byte[] newBuffer = new byte[length];
 			for (i = 0;i<length;i++){
-				buffer[i] = returnBytes.get(returnBytes.size()-1)[i];
+				newBuffer[i] = buffer[i];
 			}
-			returnBytes.remove(returnBytes.size()-1);
-			returnBytes.add(buffer);
+			//returnBytes.remove(returnBytes.size()-1);
+			returnBytes.add(newBuffer);
 		}
 		returnBytes.add(gDoc.get(gDoc.size()-1));
 		return returnBytes;
@@ -235,7 +235,11 @@ public class MyPrp {
 		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
 		final int gBlockSize = 1040;
 		final int littleInHBlock = 1024 / 8;
-		int wholeLittleBlocks  = littleInHBlock * (hDoc.size() - 1);
+		int byteNum = 0;
+		for (int m = 0;m < hDoc.size();m++){
+			byteNum += hDoc.get(m).length;
+		}
+		int gBlockNum = byteNum / 1040;
 		int littleBlock = 0;
 		int b;
 		int bB;
@@ -243,22 +247,24 @@ public class MyPrp {
 			returnBytes.add(hDoc.get(hDoc.size()-1));
 			return returnBytes;
 		}
+		int wholeLittleBlocks  = littleInHBlock * (hDoc.size() - 2);
+		wholeLittleBlocks += hDoc.get(hDoc.size() - 2).length / 8;
 		int length = 0;
 		byte[] buffer = new byte[gBlockSize];
-		for (littleBlock = 0;littleBlock < wholeLittleBlocks;littleBlock++){
-			if (length == gBlockSize){
-				returnBytes.add(buffer);
-				length = 0;
-				buffer = new byte[gBlockSize];
-			}
+		for (int n = 0;n < gBlockNum;n++){
+			buffer = new byte[gBlockSize];
+			length = 0;
+			for (littleBlock = n;littleBlock < wholeLittleBlocks;littleBlock+= gBlockNum){
 
-			b = littleBlock % littleInHBlock;
-			bB = littleBlock / littleInHBlock;
-			
-			for (int k = 0;k < 8;k ++){
-				buffer[length] = hDoc.get(bB)[b*8 + k];
-				length ++;
+				b = littleBlock % littleInHBlock;
+				bB = littleBlock / littleInHBlock;
+				
+				for (int k = 0;k < 8;k ++){
+					buffer[length] = hDoc.get(bB)[b*8 + k];
+					length ++;
+				}
 			}
+			returnBytes.add(buffer);
 		}
 		returnBytes.add(hDoc.get(hDoc.size()-1));
 		return returnBytes;
