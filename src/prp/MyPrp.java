@@ -195,14 +195,76 @@ public class MyPrp {
 	
 	public static ArrayList<byte[]> newGetHFromG(ArrayList<byte[]> gDoc){
 		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
-		ArrayList<byte[]> littleBlockBytes = new ArrayList<byte[]>();
-		int i;
+		final int hBlockSize = 1024;
+		int i,length,j,k;
+		//j is column,8 bytes is a column
 		byte[] buffer;
-		for (i = 0;i < gDoc.size()-1;i++){
-			
+		if (gDoc.size() == 1){
+			returnBytes.add(gDoc.get(gDoc.size()-1));
+			return returnBytes;
 		}
+		
+		buffer = new byte[hBlockSize];
+		length = 0;
+		for (j = 0;j < gDoc.get(0).length/8;j++){
+			for (i = 0;i < gDoc.size()-1;i++){
+				if (length == hBlockSize){
+					returnBytes.add(buffer);
+					length = 0;
+					buffer = new byte[hBlockSize];
+				}
+				for (k = 0;k < 8;k++){
+					buffer[length] = gDoc.get(i)[k+j*8];
+					length++;
+				}
+			}
+		}
+		if (length != hBlockSize){
+			buffer = new byte[length];
+			for (i = 0;i<length;i++){
+				buffer[i] = returnBytes.get(returnBytes.size()-1)[i];
+			}
+			returnBytes.remove(returnBytes.size()-1);
+			returnBytes.add(buffer);
+		}
+		returnBytes.add(gDoc.get(gDoc.size()-1));
 		return returnBytes;
 	}
+	
+	public static ArrayList<byte[]> newGetGFromH(ArrayList<byte[]> hDoc){
+		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
+		final int gBlockSize = 1040;
+		final int littleInHBlock = 1024 / 8;
+		int wholeLittleBlocks  = littleInHBlock * (hDoc.size() - 1);
+		int littleBlock = 0;
+		int b;
+		int bB;
+		if (hDoc.size() == 1){
+			returnBytes.add(hDoc.get(hDoc.size()-1));
+			return returnBytes;
+		}
+		int length = 0;
+		byte[] buffer = new byte[gBlockSize];
+		for (littleBlock = 0;littleBlock < wholeLittleBlocks;littleBlock++){
+			if (length == gBlockSize){
+				returnBytes.add(buffer);
+				length = 0;
+				buffer = new byte[gBlockSize];
+			}
+
+			b = littleBlock % littleInHBlock;
+			bB = littleBlock / littleInHBlock;
+			
+			for (int k = 0;k < 8;k ++){
+				buffer[length] = hDoc.get(bB)[b*8 + k];
+				length ++;
+			}
+		}
+		returnBytes.add(hDoc.get(hDoc.size()-1));
+		return returnBytes;
+	}
+	
+	
 	public static ArrayList<byte[]> getGFormH(ArrayList<byte[]> hDoc){
 		ArrayList<byte[]> returnBytes = new ArrayList<byte[]>();
 		int i,j,k;
@@ -253,7 +315,7 @@ public class MyPrp {
 		while(br.readLine() != null){
 			++line;
 		}
-		
+		br.close();
 		return (line);
 	}
 }
