@@ -92,7 +92,7 @@ public class MyPrp {
 			// for(int j = 0;j < md5Key.length;j ++){
 			// result[j] = (byte)(md5Key[j] ^ md5Index[j]);
 			// }
-			result.add(encrypt(new String(content.get(index)), key));
+			result.add(encrypt(content.get(index), key));
 		}
 		fo.close();
 		nfo.close();
@@ -131,14 +131,14 @@ public class MyPrp {
 		return returnByte;
 	}
 
-	public static byte[] encrypt(String content, SecretKeySpec password)
+	public static byte[] encrypt(byte[] content, SecretKeySpec password)
 			throws NoSuchAlgorithmException, NoSuchPaddingException,
 			UnsupportedEncodingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
 		byte[] result;
 		try {
 			Cipher cipher = Cipher.getInstance("AES");
-			byte[] byteContent = content.getBytes();
+			byte[] byteContent = content;
 			cipher.init(Cipher.ENCRYPT_MODE, password);
 			result = cipher.doFinal(byteContent);
 			return result;
@@ -214,7 +214,15 @@ public class MyPrp {
 					buffer = new byte[hBlockSize];
 				}
 				for (k = 0;k < 8;k++){
-					buffer[length] = gDoc.get(i)[k+j*8];
+					try{
+						buffer[length] = gDoc.get(i)[k+j*8];						
+					}
+					catch(Exception e){
+						System.out.println(k);
+						System.out.println(j);
+						System.out.println(gDoc.get(0).length);
+						System.out.println(i);
+					}
 					length++;
 				}
 			}

@@ -30,6 +30,7 @@ public class CloudClient{
 			return;
 		}
 		ConnHandle connHandle = new ConnHandle(handleSocket);
+		System.out.println("please enter your command according to the README file");
 		connHandle.run();
 	}
 }

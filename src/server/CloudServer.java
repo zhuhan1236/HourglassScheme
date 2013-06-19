@@ -28,8 +28,22 @@ public class CloudServer{
 		FileReader fr = new FileReader(f);
 		BufferedReader fb = new BufferedReader(fr);
 		serverRoot = fb.readLine();
+		File d = new File(serverRoot + "content");
+		if((!d.exists()) || (!d.isDirectory())){
+			d.mkdir();
+		}
+		d = new File(serverRoot + "pwd");
+		if((!d.exists()) || (!d.isDirectory())){
+			d.mkdir();
+		}
+		d = new File(serverRoot + "index");
+		if((!d.exists()) || (!d.isDirectory())){
+			d.mkdir();
+		}
 		CloudServer cloudServer = new CloudServer(Integer.parseInt(fb.readLine()), Integer.parseInt(fb.readLine()));
 		cloudServer.startListen();
+		fb.close();
+		fr.close();
 		
 		/*if(args.length == 0){
 			CloudServer cloudServer = new CloudServer();
