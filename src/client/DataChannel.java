@@ -115,17 +115,15 @@ public class DataChannel {
 					byte[] buf = new byte[1024];
 					FileOutputStream fileOut = new FileOutputStream(file);
 					long totalSize = 0;
-					while (true) {
-						int pos = 0;
-						if (input != null) {
-							pos = input.read(buf);
-							totalSize += 1;
-						}
-						fileOut.write(buf, 0, pos);
-						fileOut.flush();
-						if ((pos == -1) || (totalSize == size)) {
-							break;
-						}
+					while((size - totalSize) >= 1024){
+						input.readFully(buf);
+						fileOut.write(buf, 0, 1024);
+						totalSize += 1024;
+					}
+					if(totalSize != size){
+						buf = new byte[(int) (size-totalSize)];
+						input.readFully(buf);
+						fileOut.write(buf, 0, (int) (size-totalSize));
 					}
 					fileOut.close();
 					connState = 0;
@@ -142,21 +140,17 @@ public class DataChannel {
 					byte[] buf = new byte[1040];
 					long totalSize = 0;
 					ArrayList<byte[]> gFile = new ArrayList<byte[]>();
-					while (true) {
-						int pos = 0;
-						if (input != null) {
-							pos = input.read(buf);
-							totalSize += 1;
-							byte[] buf1 = new byte[pos];
-							for (int i = 0; i < pos; ++i) {
-								buf1[i] = buf[i];
-							}
-							gFile.add(buf1);
-						}
-						if ((pos == -1) || (totalSize == size)) {
-							break;
-						}
+					while((size - totalSize) >= 1040){
+						input.readFully(buf);
+						gFile.add(buf.clone());
+						totalSize += 1040;
 					}
+					if(totalSize != size){
+						buf = new byte[(int) (size-totalSize)];
+						input.readFully(buf);
+						gFile.add(buf.clone());
+					}
+				
 					ArrayList<byte[]> hFile = MyPrp.newGetHFromG(gFile);
 
 					FileOutputStream fileOut = new FileOutputStream(file);
@@ -183,7 +177,7 @@ public class DataChannel {
 						pos = fI.read(bufL);
 						fI.close();
 						byte[] bufR = new byte[rLen];
-						input.read(bufR);
+						input.readFully(bufR);
 						for(int i = 0;i < rLen;++i){
 							if(bufL[i] != bufR[i]){
 								System.out.println("verify failed!");
@@ -201,7 +195,7 @@ public class DataChannel {
 						pos = fI.read(bufL);
 						fI.close();
 						byte[] bufR = new byte[1024];
-						input.read(bufR);
+						input.readFully(bufR);
 						for(int i = 0;i < 1024;++i){
 							if(bufL[i] != bufR[i]){
 								System.out.println("verify failed!");

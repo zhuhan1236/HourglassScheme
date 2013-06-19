@@ -222,6 +222,8 @@ public class MyPrp {
 						System.out.println(j);
 						System.out.println(gDoc.get(0).length);
 						System.out.println(i);
+						System.out.println(gDoc.get(i).length);
+						System.out.println(length);
 					}
 					length++;
 				}
@@ -237,6 +239,16 @@ public class MyPrp {
 		}
 		returnBytes.add(gDoc.get(gDoc.size()-1));
 		return returnBytes;
+	}
+	
+	public static long getLen(String path) throws NumberFormatException, IOException{
+		File f = new File(CloudServer.serverRoot + "len/" + path);
+		FileReader fr = new FileReader(f);
+		BufferedReader br = new BufferedReader(fr);
+		long l = (Long.parseLong(br.readLine()));
+		br.close();
+		fr.close();
+		return l;
 	}
 	
 	public static ArrayList<byte[]> newGetGFromH(ArrayList<byte[]> hDoc){

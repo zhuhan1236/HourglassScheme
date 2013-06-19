@@ -31,6 +31,7 @@ public class CheatingDataChannel {
 	private String contentPath;
 	private String indexPath;
 	private String pwdPath;
+	private String lenPath;
 	private DataInputStream input;
 	private DataOutputStream output;
 	private long size;
@@ -51,7 +52,7 @@ public class CheatingDataChannel {
 		dCPI = new DChannelPI();
 	}
 	
-	public int config(int s, int com, String p) throws IOException {
+	public long GETHconfig(int s, int com, String p) throws IOException {
 		if (connState == 0) {
 			path = p;
 			contentPath = rootPath + "content/" + p;
@@ -61,7 +62,25 @@ public class CheatingDataChannel {
 			if (fp.exists() && fp.isFile()) {
 				connState = s;
 				command = com;
-				return (int) (fp.length() / 1024 + 1);
+				return fp.length();
+			} else {
+				return -1;
+			}
+		}
+		return -2;
+	}
+	
+	public long RETRconfig(int s, int com, String p) throws IOException {
+		if (connState == 0) {
+			path = p;
+			contentPath = rootPath + "content/" + p;
+			indexPath = rootPath + "index/" + p;
+			pwdPath = rootPath + "pwd/" + p;
+			File fp = new File(contentPath);
+			if (fp.exists() && fp.isFile()) {
+				connState = s;
+				command = com;
+				return MyPrp.getLen(p);
 			} else {
 				return -1;
 			}
@@ -79,6 +98,7 @@ public class CheatingDataChannel {
 				contentPath = rootPath + "content/" + p;
 				indexPath = rootPath + "index/" + p;
 				pwdPath = rootPath + "pwd/" + p;
+				lenPath = rootPath + "len/" + p;
 				return "";
 			}
 			else{
@@ -109,21 +129,17 @@ public class CheatingDataChannel {
 					ArrayList<byte[]> recvFile = new ArrayList<byte[]>();
 					byte[] buf = new byte[1024];
 					long totalSize = 0;
-					while (true) {
-						int pos = 0;
-						if (input != null) {
-							pos = input.read(buf);
-							totalSize += pos;
-						}
-						byte[] buf1 = new byte[pos];
-						for(int i = 0;i < pos;++i){
-							buf1[i] = buf[i];
-						}
-						if(buf1.length != 0)
-							recvFile.add(buf1);
-						if ((pos == -1) || (totalSize == size))
-							break;
+					while((size - totalSize) >= 1024){
+						input.readFully(buf);
+						recvFile.add(buf.clone());
+						totalSize += 1024;
 					}
+					if(totalSize != size){
+						buf = new byte[(int) (size-totalSize)];
+						input.readFully(buf);
+						recvFile.add(buf.clone());
+					}
+					
 					try {
 						ArrayList<byte[]> gFile = prp.MyPrp
 								.enCodeAndWriteToDoc(recvFile,
@@ -138,6 +154,15 @@ public class CheatingDataChannel {
 							fileOut.write(gFile.get(i), 0, gFile.get(i).length);
 						}
 						fileOut.close();
+						
+						newFile = new File(lenPath);
+						if(newFile.exists() && newFile.isFile()){
+							newFile.delete();
+						}
+						newFile.createNewFile();
+						FileWriter fw = new FileWriter(newFile);
+						fw.write(Long.toString(size));
+						fw.close();
 						connState = 0;
 						
 					} catch (InvalidKeyException e) {

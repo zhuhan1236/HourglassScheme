@@ -41,7 +41,7 @@ public class CheatingHandle extends ConnHandle{
 	}
 
 	private CompiledResult RETRCommand(CompiledResult com) throws IOException{
-		int confRes = dataChannel.config(1, 1, com.content);
+		long confRes = dataChannel.RETRconfig(1, 1, com.content);
 		if(confRes == -2){
 			return (new CompiledResult("ERROR:", "data channel busy"));
 		}
@@ -50,7 +50,7 @@ public class CheatingHandle extends ConnHandle{
 		}
 		else{
 			dataChannel.run();
-			return (new CompiledResult("READY", Integer.toString(confRes)));
+			return (new CompiledResult("READY", Long.toString(confRes)));
 		}
 	}
 	
@@ -69,7 +69,7 @@ public class CheatingHandle extends ConnHandle{
 	}
 	
 	private CompiledResult GETHCommand(CompiledResult com) throws IOException{
-		int confRes = dataChannel.config(1, 2, com.content);
+		long confRes = dataChannel.GETHconfig(1, 2, com.content);
 		if(confRes == -2){
 			return (new CompiledResult("ERROR:", "data channel busy"));
 		}
@@ -78,7 +78,7 @@ public class CheatingHandle extends ConnHandle{
 		}
 		else{
 			dataChannel.run();
-			return (new CompiledResult("READY", Integer.toString(confRes)));
+			return (new CompiledResult("READY", Long.toString(confRes)));
 		}
 	}
 	
