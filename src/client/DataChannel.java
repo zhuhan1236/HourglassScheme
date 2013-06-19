@@ -21,6 +21,7 @@ public class DataChannel {
 	private DataOutputStream output;
 	private long size;
 	private int blockNO;
+	private DataChannel that = this;
 
 	public DataChannel(Socket conn) {
 		dataSocket = conn;
@@ -39,8 +40,12 @@ public class DataChannel {
 		return connState;
 	}
 
-	public void run() {
-		new Thread(dCPI).start();
+	public void run() throws InterruptedException {
+		Thread t = new Thread(dCPI);
+		t.start();
+		synchronized (this) {
+			this.wait();
+		}
 	}
 
 	public void config(int s, int c, String p, long si) {
@@ -98,6 +103,9 @@ public class DataChannel {
 					fInputStream.close();
 					connState = 0;
 					System.out.println("transfer completed");
+					synchronized (that) {
+						that.notify();
+					}
 				} else if (command == 1) {
 					File file = new File(path);
 					if (file.exists() && file.isFile()) {
@@ -122,6 +130,9 @@ public class DataChannel {
 					fileOut.close();
 					connState = 0;
 					System.out.println("transfer completed");
+					synchronized (that) {
+						that.notify();
+					}
 				} else if (command == 2) {
 					File file = new File(path);
 					if (file.exists() && file.isFile()) {
@@ -146,7 +157,7 @@ public class DataChannel {
 							break;
 						}
 					}
-					ArrayList<byte[]> hFile = MyPrp.getHdoc(gFile);
+					ArrayList<byte[]> hFile = MyPrp.newGetHFromG(gFile);
 
 					FileOutputStream fileOut = new FileOutputStream(file);
 					for (int i = 0; i < hFile.size(); ++i) {
@@ -156,6 +167,9 @@ public class DataChannel {
 					fileOut.close();
 					connState = 0;
 					System.out.println("transfer completed");
+					synchronized (that) {
+						that.notify();
+					}
 				} else if(command == 3){
 					File f = new File(path);
 					int blockLen = 1024;
@@ -192,11 +206,17 @@ public class DataChannel {
 							if(bufL[i] != bufR[i]){
 								System.out.println("verify failed!");
 								connState = 0;
+								synchronized (that) {
+									that.notify();
+								}
 								return;
 							}
 						}
 						System.out.println("verify successful");
 						connState = 0;
+					}
+					synchronized (that) {
+						that.notify();
 					}
 				}
 			} catch (IOException e) {

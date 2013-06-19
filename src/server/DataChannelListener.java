@@ -6,7 +6,7 @@ import java.net.Socket;
 
 public class DataChannelListener extends Listener {
 	private DCListenerPI dCLPI = null;
-	private DataChannel dataChannel = null;
+	private Object dataChannel = null;
 	private static ServerSocket server;
 	private DataChannelListener that = this;
 
@@ -21,7 +21,11 @@ public class DataChannelListener extends Listener {
 	}
 
 	public DataChannel getDataChannel() {
-		return dataChannel;
+		return (DataChannel)dataChannel;
+	}
+	
+	public CheatingDataChannel getCheatingChannel(){
+		return (CheatingDataChannel)dataChannel;
 	}
 
 	public void waitForDataConnection() {
@@ -64,7 +68,12 @@ public class DataChannelListener extends Listener {
 
 				}
 				Socket conn = server.accept();
-				dataChannel = new DataChannel(conn);
+				if(CloudServer.type == 0){
+					dataChannel = new DataChannel(conn);
+				}
+				else{
+					dataChannel = new CheatingDataChannel(conn);
+				}
 				synchronized (that) {
 					that.notify();
 				}

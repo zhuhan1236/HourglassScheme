@@ -21,7 +21,7 @@ import javax.crypto.NoSuchPaddingException;
 
 import prp.MyPrp;
 
-public class DataChannel {
+public class CheatingDataChannel {
 	private Socket dataSocket;
 	private DChannelPI dCPI;
 	private String rootPath = CloudServer.serverRoot;
@@ -36,7 +36,7 @@ public class DataChannel {
 	private long size;
 	private int blockNO;
 
-	public DataChannel(Socket conn) {
+	public CheatingDataChannel(Socket conn) {
 		if ((conn != null) && (conn.isConnected())) {
 			dataSocket = conn;
 		}
@@ -50,7 +50,7 @@ public class DataChannel {
 		}
 		dCPI = new DChannelPI();
 	}
-
+	
 	public int config(int s, int com, String p) throws IOException {
 		if (connState == 0) {
 			path = p;
@@ -61,7 +61,7 @@ public class DataChannel {
 			if (fp.exists() && fp.isFile()) {
 				connState = s;
 				command = com;
-				return MyPrp.getBlockNum(p);
+				return (int) (fp.length() / 1024 + 1);
 			} else {
 				return -1;
 			}
@@ -128,20 +128,18 @@ public class DataChannel {
 						ArrayList<byte[]> gFile = prp.MyPrp
 								.enCodeAndWriteToDoc(recvFile,
 										prp.MyPrp.myShuffle(size), path);
-						
-						ArrayList<byte[]> hFile = prp.MyPrp.newGetHFromG(gFile);
 								
 						File newFile = new File(contentPath);
 						if(newFile.exists() && newFile.isFile()){
 							newFile.delete();
 						}
-						newFile.createNewFile();
 						FileOutputStream fileOut = new FileOutputStream(newFile);
-						for(int i = 0;i < hFile.size();++i){
-							fileOut.write(hFile.get(i));
+						for(int i = 0;i < gFile.size();++i){
+							fileOut.write(gFile.get(i), 0, gFile.get(i).length);
 						}
 						fileOut.close();
 						connState = 0;
+						
 					} catch (InvalidKeyException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -158,91 +156,107 @@ public class DataChannel {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				} else if ((command == 1) || (command == 2)) {
-					File newFile = new File(contentPath);
-					FileInputStream br = new FileInputStream(newFile);
-					ArrayList<byte[]> thFile = new ArrayList<byte[]>();
-					int blockNum = MyPrp.getBlockNum(path);
-					int blockLen = 1024;
-					byte[] hf = new byte[blockLen];
+				} else if(command == 1){
+					File file = new File(contentPath);
+					FileInputStream fInputStream = new FileInputStream(file);
+					ArrayList<byte[]> gFile = new ArrayList<byte[]>();
+					byte[] buf = new byte[1040];
 					int pos;
-					int tCount = (1040 * (blockNum - 1)) / blockLen;
-					int rLen = (1040 * (blockNum - 1)) % blockLen;
-					
-					int count = 0;
-					while(true){
-						if(count == tCount){
-							byte[] bb = new byte[rLen];
-							pos = br.read(bb);
-							if(bb.length != 0)
-								thFile.add(bb);
-						
-							byte[] b = new byte[1040];
-							pos = br.read(b);
-							byte[] tt = new byte[pos];
-							for(int i = 0;i < pos;++i){
-								tt[i] = b[i];
-							}
-							if(tt.length != 0)
-								thFile.add(tt);
-							break;
-						}
+					while (true) {
 						pos = 0;
-						pos = br.read(hf);
-						if(pos == -1){
+						if (fInputStream != null)
+							pos = fInputStream.read(buf);
+						if (pos == -1)
 							break;
-						}
-						byte[] t = new byte[pos];
+						byte[] buf1 = new byte[pos];
 						for(int i = 0;i < pos;++i){
-							t[i] = hf[i];
+							buf1[i] = buf[i];
 						}
-						if(t.length != 0)
-							thFile.add(t);
-						++count;
+						gFile.add(buf1);
 					}
-					br.close();
-					
-					if(command == 1){
-						ArrayList<byte[]> tgFile = prp.MyPrp.newGetGFromH(thFile);
-						ArrayList<byte[]> tfFile = prp.MyPrp.decodeFile(tgFile, path);
-						for(int i = 0;i < tfFile.size();++i){
-							output.write(tfFile.get(i), 0, tfFile.get(i).length);
-							output.flush();
-						}
-					}else{
-						ArrayList<byte[]> tgFile = prp.MyPrp.newGetGFromH(thFile);
-						
-						for(int i = 0;i < tgFile.size();++i){
-							output.write(tgFile.get(i), 0, tgFile.get(i).length);
-							output.flush();
-						}
+					fInputStream.close();
+					ArrayList<byte[]> fFile = MyPrp.decodeFile(gFile, path);
+					for(int i = 0;i < fFile.size();++i){
+						output.write(fFile.get(i), 0, fFile.get(i).length);
 					}
-					
+					connState = 0;
+				}
+				else if (command == 2) {
+					byte[] buf = new byte[1040];
+					File file = new File(contentPath);
+					FileInputStream fI = new FileInputStream(file);
+					while (true) {
+						int pos = 0;
+						pos = fI.read(buf);
+						if ((pos == -1))
+							break;
+						output.write(buf, 0, pos);
+					}
+					fI.close();
 					connState = 0;
 				} else if(command == 3){
-					File f = new File(contentPath);
-					int blockLen = 1024;
+					File file = new File(contentPath);
+					FileInputStream fInputStream = new FileInputStream(file);
+					ArrayList<byte[]> gFile = new ArrayList<byte[]>();
+					byte[] buf = new byte[1040];
 					int pos;
-					int tCount = (int) (f.length() / blockLen);
-					int rLen = (int) (f.length() % blockLen);
-					if(blockNO == (tCount)){
-						FileInputStream fI = new FileInputStream(f);
-						fI.skip(1024 * tCount);
-						byte[] buf = new byte[rLen];
-						pos = fI.read(buf);
-						output.write(buf, 0, pos);
-						output.flush();
-						fI.close();
+					while (true) {
+						pos = 0;
+						if (fInputStream != null)
+							pos = fInputStream.read(buf);
+						if (pos == -1)
+							break;
+						byte[] buf1 = new byte[pos];
+						for(int i = 0;i < pos;++i){
+							buf1[i] = buf[i];
+						}
+						if(pos != 0)
+							gFile.add(buf1);
+					}
+					fInputStream.close();
+					
+					ArrayList<byte[]> hFile = MyPrp.newGetHFromG(gFile);
+					if((hFile.get(blockNO).length < 1024) && ((hFile.size() - 1) > blockNO)){
+						int lastTwo = hFile.get(hFile.size() - 1).length + hFile.get(hFile.size() - 2).length;
+						if(lastTwo < 1024){
+							byte[] b = new byte[lastTwo];
+							int i = 0;
+							for(;i < hFile.get(hFile.size() - 2).length;++i){
+								b[i] = hFile.get(hFile.size() - 2)[i];
+							}
+							for(int j = lastTwo - 1;j >= i;--j){
+								b[j] = hFile.get(hFile.size() - 1)[j - i];
+							}
+							output.write(b, 0, lastTwo);
+						}
+						else{
+							byte[] b = new byte[1024];
+							int i = 0;
+							for(;i < hFile.get(hFile.size() - 2).length;++i){
+								b[i] = hFile.get(hFile.size() - 2)[i];
+							}
+							for(int j = 1024 - 1;j >= i;--j){
+								b[j] = hFile.get(hFile.size() - 1)[j - i];
+							}
+							output.write(b, 0, 1024);
+						}
 					}
 					else{
-						FileInputStream fI = new FileInputStream(f);
-						fI.skip(1024 * blockNO);
-						byte[] buf = new byte[1024];
-						pos = fI.read(buf);
-						output.write(buf, 0, pos);
-						output.flush();
-						fI.close();
+						output.write(hFile.get(blockNO), 0, hFile.get(blockNO).length);
+						File nnewFile = new File("/home/zh-pc/secFile/content/h.txt");
+						if(nnewFile.exists())
+							nnewFile.delete();
+						nnewFile.createNewFile();
+						FileOutputStream ffileOut = new FileOutputStream(nnewFile);
+						
+					
+						for(int i = 0;i < hFile.size();++i){
+							ffileOut.write(hFile.get(i), 0, gFile.get(i).length);
+						}
+						
+						ffileOut.close();
 					}
+					
 					connState = 0;
 				}
 			} catch (IOException e) {

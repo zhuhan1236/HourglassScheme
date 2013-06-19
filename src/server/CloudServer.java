@@ -1,10 +1,13 @@
 package server;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 
 public class CloudServer{
 	private int port;
-	private int type;
+	public static int type;
 	public static String serverRoot = "/home/zh-pc/secFile/";
 	
 	public CloudServer(){
@@ -21,7 +24,14 @@ public class CloudServer{
 	}
 	
 	public static void main(String[] args) throws IOException{
-		if(args.length == 0){
+		File f = new File("serverConfig.txt");
+		FileReader fr = new FileReader(f);
+		BufferedReader fb = new BufferedReader(fr);
+		serverRoot = fb.readLine();
+		CloudServer cloudServer = new CloudServer(Integer.parseInt(fb.readLine()), Integer.parseInt(fb.readLine()));
+		cloudServer.startListen();
+		
+		/*if(args.length == 0){
 			CloudServer cloudServer = new CloudServer();
 			cloudServer.startListen();	
 		}
@@ -35,7 +45,7 @@ public class CloudServer{
 		}
 		else{
 			System.out.println("args error");
-		}
+		}*/
 	}
 	
 	public void startListen() throws IOException{

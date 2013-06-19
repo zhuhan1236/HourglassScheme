@@ -92,7 +92,7 @@ public class MyPrp {
 			// for(int j = 0;j < md5Key.length;j ++){
 			// result[j] = (byte)(md5Key[j] ^ md5Index[j]);
 			// }
-			result.add(encrypt(new String(content.get(myList.get(index))), key));
+			result.add(encrypt(new String(content.get(index)), key));
 		}
 		fo.close();
 		nfo.close();
@@ -123,7 +123,7 @@ public class MyPrp {
 		for (int k = 0; k < i; k++) {
 			indexString = indexBR.readLine();
 			index = Integer.parseInt(indexString);
-			key = new SecretKeySpec(keyString.get(k).getBytes(), "AES");
+			key = new SecretKeySpec(keyString.get(index).getBytes(), "AES");
 			returnByte.add(decrypt(gFile.get(index), key));
 		}
 		indexBR.close();

@@ -16,6 +16,7 @@ public class ConnHandle {
 	private String outputMsg;
 	private CompiledResult compiledMsg;
 	private DataChannel dataChannel;
+	private long cTime;
 
 	public ConnHandle(Socket conn) {
 		connection = conn;
@@ -67,7 +68,7 @@ public class ConnHandle {
 		}
 	}
 
-	private void handleSTOR(String response) {
+	private void handleSTOR(String response) throws InterruptedException {
 		CompiledResult r = new CompiledResult();
 		r.compile(response);
 		if (r.command.startsWith("ERROR")) {
@@ -75,15 +76,15 @@ public class ConnHandle {
 		} else {
 			String confRes = dataChannel.config(1, 0, compiledMsg.content);
 			if (confRes.equals("")) {
-				dataChannel.run();
 				System.out.println("transfering...");
+				dataChannel.run();
 			} else {
 				System.out.println(confRes);
 			}
 		}
 	}
 
-	private void handleRETR(String response) {
+	private void handleRETR(String response) throws InterruptedException {
 		CompiledResult r = new CompiledResult();
 		r.compile(response);
 		if (r.command.startsWith("ERROR")) {
@@ -97,7 +98,7 @@ public class ConnHandle {
 		}
 	}
 
-	private void handleGETH(String response) {
+	private void handleGETH(String response) throws InterruptedException {
 		CompiledResult r = new CompiledResult();
 		r.compile(response);
 		if (r.command.startsWith("ERROR")) {
@@ -111,7 +112,7 @@ public class ConnHandle {
 		}
 	}
 
-	private void handleCHAL(String response) {
+	private void handleCHAL(String response) throws InterruptedException {
 		CompiledResult r = new CompiledResult();
 		r.compile(response);
 		if (r.command.startsWith("ERROR")) {
@@ -122,10 +123,11 @@ public class ConnHandle {
 					+ compiledMsg.content.substring(0,
 							compiledMsg.content.indexOf(" ")) + "th block...");
 			dataChannel.run();
+			System.out.println("response time is : " + Long.toString(System.nanoTime() - cTime));
 		}
 	}
 
-	private void waitResponse(CompiledResult msg) {
+	private void waitResponse(CompiledResult msg) throws InterruptedException {
 		try {
 			if (msg.command.equals("LIST")) {
 				outputMsg = compiledMsg.command + " " + compiledMsg.content
@@ -167,7 +169,7 @@ public class ConnHandle {
 				inputMsg = input.readLine();
 				handleGETH(inputMsg);
 			} else if (msg.command.equals("CHAL")) {
-				if (dataChannel.getConnState() != 0) {
+				if (dataChannel.getConnState() != 0) { 
 					System.out.println("data channel is busy");
 					return;
 				}
@@ -185,6 +187,8 @@ public class ConnHandle {
 					return;
 				}
 				outputMsg = compiledMsg.command + " " + bNO + " " + fileName + "\r\n";
+				
+				cTime = System.nanoTime();
 				output.write(outputMsg.getBytes());
 				inputMsg = input.readLine();
 				handleCHAL(inputMsg);
@@ -195,7 +199,7 @@ public class ConnHandle {
 
 	}
 
-	public void run() {
+	public void run() throws InterruptedException {
 		try {
 			inputMsg = input.readLine();
 			compiledMsg.compile(inputMsg);
